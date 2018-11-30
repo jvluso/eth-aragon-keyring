@@ -1,6 +1,6 @@
 {
   "name": "eth-aragon-keyring",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A keyring for using Aragon Smart Organizations in Metamask.",
   "main": "index.js",
   "scripts": {
