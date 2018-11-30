@@ -1,6 +1,17 @@
 const EventEmitter = require('events').EventEmitter
 const initAragonJS = require('./aragonjs-wrapper');
 
+const ethUtil = require('ethereumjs-util')
+
+const FIELDS = [
+  'nonce',
+  'gasPrice',
+  'gasLimit',
+  'to',
+  'value',
+  'data',
+]
+
 // Options:
 const type = 'Aragon Key'
 
@@ -26,7 +37,6 @@ class AragonKeyring extends EventEmitter {
   deserialize (opts = {}) {
     this.opts = opts || {}
     this.wrapper = {}
-    this.subProvider = {}
     this.ens = opts.ens
     this.dao = opts.dao
     this.forwardingAddress = opts.forwardingAddress
@@ -40,7 +50,7 @@ class AragonKeyring extends EventEmitter {
   }
 
   getAccounts () {
-    return Promise.resolve([forwardingAddress])
+    return Promise.resolve([this.forwardingAddress])
   }
 
   // the provider needs to be injected somewhere, as does some way of passing the transaction to the final signer
@@ -51,13 +61,19 @@ class AragonKeyring extends EventEmitter {
 
   // tx is an instance of the ethereumjs-transaction class.
   signTransaction (address, tx) {
+
+    const serialized = { from: address }
+    FIELDS.forEach((field) => {
+      const value = ethUtil.bufferToHex(tx[field])
+      serialized[field] = ethUtil.bufferToHex(tx[field])
+    })
     return this._getWallet()
     .then((wrapper) =>{
-      return wrapper.calculateForwardingPath(
+      return this.wrapper.calculateForwardingPath(
         this.parentAddress,
-        tx.to,
-        tx,
-        [tx.from])
+        serialized.to,
+        serialized,
+        [serialized.from])
     })
     .then(result => {
       this.providerSignTransaction(result[0],this.parentAddress)
@@ -97,13 +113,15 @@ class AragonKeyring extends EventEmitter {
       throw new Error('supProvider not provided')
     }
     if(this.wrapper){
-      return (promise.resolve(this.wrapper))
+      return (Promise.resolve(this.wrapper))
     }
+	  throw new Error("before init")
     return initAragonJS(this.dao, this.ens, {
       accounts: this.accounts,
       provider: this.subProvider
     })
     .then((initializedWrapper) => {
+	    throw new Error("before call")
       this.wrapper = initializedWrapper
       return this.wrapper
     })
