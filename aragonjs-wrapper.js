@@ -46,12 +46,13 @@ const initWrapper = async (
     onPermissions = noop,
   } = {}
 ) => {
-  const wrapper = new Aragon(dao, {
-    ensRegistryAddress,
+  const wrapper = new Aragon.default(dao, {
     provider,
-    apm: { ipfs: ipfsConf },
+    apm: {
+      ensRegistryAddress,
+      ipfs: ipfsConf
+    },
   })
-
   try {
     await wrapper.init(accounts || [accounts])
   } catch (err) {

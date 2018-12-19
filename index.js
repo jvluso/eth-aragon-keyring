@@ -36,7 +36,6 @@ class AragonKeyring extends EventEmitter {
 
   deserialize (opts = {}) {
     this.opts = opts || {}
-    this.wrapper = {}
     this.ens = opts.ens
     this.dao = opts.dao
     this.forwardingAddress = opts.forwardingAddress
@@ -67,6 +66,7 @@ class AragonKeyring extends EventEmitter {
       const value = ethUtil.bufferToHex(tx[field])
       serialized[field] = ethUtil.bufferToHex(tx[field])
     })
+    delete serialized.gasLimit;
     return this._getWallet()
     .then((wrapper) =>{
       return this.wrapper.calculateForwardingPath(
@@ -76,7 +76,9 @@ class AragonKeyring extends EventEmitter {
         [serialized.from])
     })
     .then(result => {
-      this.providerSignTransaction(result[0],this.parentAddress)
+      var tx = result[0]
+      delete tx.nonce
+      this.providerSignTransaction(tx,this.parentAddress)
     })
   }
 
@@ -115,13 +117,11 @@ class AragonKeyring extends EventEmitter {
     if(this.wrapper){
       return (Promise.resolve(this.wrapper))
     }
-	  throw new Error("before init")
     return initAragonJS(this.dao, this.ens, {
       accounts: this.accounts,
       provider: this.subProvider
     })
     .then((initializedWrapper) => {
-	    throw new Error("before call")
       this.wrapper = initializedWrapper
       return this.wrapper
     })
