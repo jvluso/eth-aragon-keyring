@@ -69,16 +69,18 @@ class AragonKeyring extends EventEmitter {
     delete serialized.gasLimit;
     return this._getWallet()
     .then((wrapper) =>{
-      return this.wrapper.calculateForwardingPath(
+      return this.wrapper.calculateTransactionPath(
         this.parentAddress,
-        serialized.to,
-        serialized,
-        [serialized.from])
+        this.forwardingAddress,
+        "execute",
+        [serialized.to,serialized.value,serialized.data])
     })
     .then(result => {
-      var tx = result[0]
-      delete tx.nonce
-      this.providerSignTransaction(tx,this.parentAddress)
+      var newTx = result[0]
+      delete newTx.nonce
+      if(typeof newTx.value == 'undefined') newTx.value="0x"
+      if(typeof newTx.gasPrice == 'undefined') newTx.gasPrice=serialized.gasPrice
+      this.providerSignTransaction(newTx,this.parentAddress)
     })
   }
 
@@ -89,7 +91,22 @@ class AragonKeyring extends EventEmitter {
 
 
   signPersonalMessage (withAccount, msgHex) {
-    throw new Error('Not supported')
+    const message = "0x" + ethUtil.keccak(msgHex).toString('hex')
+    return this._getWallet()
+    .then((wrapper) =>{
+      return this.wrapper.calculateTransactionPath(
+        this.parentAddress,
+        this.forwardingAddress,
+        "presignHash",
+        [message])
+    })
+    .then(result => {
+      var newTx = result[0]
+      delete newTx.nonce
+      if(typeof newTx.value == 'undefined') newTx.value="0x"
+      if(typeof newTx.gasPrice == 'undefined') newTx.gasPrice="0xee6b2800"
+      this.providerSignTransaction(newTx,this.parentAddress)
+    })
   }
 
 
